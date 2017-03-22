@@ -12,11 +12,11 @@ const listing = (listing) =>
   <p key={listing.first_name}>
     {listing.first_name} {listing.last_name} {listing.email}
   </p>
-const fetchData = (searchTerm = '', cb, err) => {
+const fetchData = (searchTerm = '', cb) => {
   fetch(`http://localhost:3000/listings?q=${searchTerm}&_limit=20`)
     .then(response => response.json())
-    .then(json => cb(json))
-    .catch(e => err())
+      .then(json => cb(json))
+        .catch(e => cb(null, true));
 }
 
 class SearchableList extends Component {
@@ -38,45 +38,40 @@ class SearchableList extends Component {
 
   /* Lifecycle Functions */
   componentDidMount = () => {
-    const { 
-      handleSuccess,
-      handleError 
-    } = this;
+    const { handleResponse } = this;
     this.setState({
       loading: true,
     })
-    fetchData('', handleSuccess, handleError);
+    fetchData('', handleResponse);
   }
   componentDidUpdate = (prevProps, prevState) => {
     if (this.state.searchTerm === prevState.searchTerm) return;
     const { searchTerm } = this.state;
-    const { 
-      handleSuccess,
-      handleError 
-    } = this;
+    const { handleResponse } = this;
     this.setState({
       loading: true,
     });
-    fetchData(searchTerm, handleSuccess, handleError);
+    fetchData(searchTerm, handleResponse);
   }
 
   /* StateChange Functions */
-  handleError = () => {
-    this.setState({
-      error: true,
-      loading: false,
-    })
-  }
-  handleSuccess = (json) => {
-    this.setState({
-      data: json,
-      loading: false,
-    })
+  handleResponse = (data, error = false) => {
+    if (error) {
+      this.setState({
+        error: true,
+        loading: false,
+      })
+    } else {
+      this.setState({
+        data: data,
+        loading: false,
+        error: false,
+      })
+    }
   }
   updateSearchTerm = (e) => {
-    let term = e.target.value;
     this.setState({
-      searchTerm: term,
+      searchTerm: e.target.value,
     })
   }
 
