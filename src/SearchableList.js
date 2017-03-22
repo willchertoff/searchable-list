@@ -1,15 +1,23 @@
-import React,
-  {
-    Component,
-    PropTypes
-  } from 'react';
+import React, {
+  Component,
+  PropTypes
+} from 'react';
 import fetch from 'isomorphic-fetch';
+
+/* Functional */
+const listings = (listings) => listings.map(l => listing(l));
+const errormsg = (error) => <p>Sorry, there was an error</p>
+const loadmsg = (loading) => <p>Loading</p>
+const listing = (listing) =>
+  <p key={listing.first_name}>
+    {listing.first_name} {listing.last_name} {listing.email}
+  </p>
 
 class SearchableList extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      listings: [],
+      data: [],
       loading: false,
       error: false,
       searchTerm: null,
@@ -27,25 +35,30 @@ class SearchableList extends Component {
     this.setState({
       loading: true,
     })
-    this.fetchListings();
+    this.fetchData();
   }
   componentDidUpdate = (prevProps, prevState) => {
-    // Make Network Request
     if (this.state.searchTerm === prevState.searchTerm) return;
     const { searchTerm } = this.state;
     this.setState({
       loading: true,
     });
-    this.fetchListings(searchTerm);
+    this.fetchData(searchTerm);
   }
 
-  /* Component Functions */
-  fetchListings = (searchTerm = '') => {
+  /* StateChange Functions */
+  fetchData = (searchTerm = '') => {
     fetch(`http://localhost:3000/listings?q=${searchTerm}&_limit=20`)
       .then(response => response.json())
       .then(json => {
         this.setState({
-          listings: json,
+          data: json,
+          loading: false,
+        })
+      })
+      .catch(e => {
+        this.setState({
+          error: true,
           loading: false,
         })
       })
@@ -56,21 +69,15 @@ class SearchableList extends Component {
       searchTerm: term,
     })
   }
-  renderListings = () => {
-    const { listings, loading } = this.state;
-    const l = loading ? (
-        <p>Loading</p>
-      ) : (
-        listings.length > 0 ? (
-          listings.map(listing => 
-            <p key={listing.first_name}>
-              {listing.first_name} {listing.last_name} {listing.email}
-            </p>
-          )
-        ) : ( <p>No Listings</p> )
-      )
-    return l;
+
+  /* Content Functions */
+  renderContent = () => {
+    const { data, loading, error } = this.state;
+    if (error) return errormsg();
+    if (loading) return loadmsg();
+    if (data.length > 0) return listings(data);
   }
+
   render() {
     return (
       <div>
@@ -80,7 +87,7 @@ class SearchableList extends Component {
           onChange={this.updateSearchTerm}
         />
         <br />
-        {this.renderListings()}
+        {this.renderContent()}
       </div>
     )
   }
