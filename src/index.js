@@ -8,12 +8,13 @@ import fetch from 'isomorphic-fetch';
 const listings = (listings) => listings.map(l => listing(l));
 const errormsg = (error) => <p>Sorry, there was an error</p>
 const loadmsg = (loading) => <p>Loading</p>
+const needData = (data = []) => !data.length > 0;
 const listing = (listing) =>
   <p key={listing.first_name}>
     {listing.first_name} {listing.last_name} {listing.email}
   </p>
-const fetchData = (searchTerm = '', cb) => {
-  fetch(`http://localhost:3000/listings?q=${searchTerm}&_limit=20`)
+const fetchData = (endpoint, searchTerm = '', cb) => {
+  fetch(`${endpoint}/listings?q=${searchTerm}&_limit=20`)
     .then(response => response.json())
       .then(json => cb(json))
         .catch(e => cb(null, true));
@@ -23,14 +24,14 @@ class SearchableList extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      data: [],
+      data: props.data || [],
       loading: false,
       error: false,
       searchTerm: null,
     }
   }
   static defaultProps = {
-    endpoint: 'http://localhost:3000',
+    endpoint: '',
   }
   static propTypes = {
     endpoint: PropTypes.string.isRequired,
@@ -38,20 +39,26 @@ class SearchableList extends Component {
 
   /* Lifecycle Functions */
   componentDidMount = () => {
+    const { data } = this.state;
+    const { endpoint } = this.props;
     const { handleResponse } = this;
+    if (!needData(data)) {
+      return;
+    };
     this.setState({
       loading: true,
     })
-    fetchData('', handleResponse);
+    fetchData(endpoint, '', handleResponse);
   }
   componentDidUpdate = (prevProps, prevState) => {
-    if (this.state.searchTerm === prevState.searchTerm) return;
+    const { endpoint } = this.props;
     const { searchTerm } = this.state;
     const { handleResponse } = this;
+    if (searchTerm === prevState.searchTerm) return;
     this.setState({
       loading: true,
     });
-    fetchData(searchTerm, handleResponse);
+    fetchData(endpoint, searchTerm, handleResponse);
   }
 
   /* StateChange Functions */
